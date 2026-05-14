@@ -1,0 +1,297 @@
+// Geometry columns use Prisma's Unsupported() wrapper — spatial queries use $queryRaw.
+// PostGIS is enabled at the DB level via the Docker init script (see prisma/enable_postgis.sql).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN_MINISTERE
+  ADMIN_WILAYA
+  GESTIONNAIRE_TERRITORIAL
+  AGENT_TECHNIQUE
+  CITOYEN
+}
+
+enum SignalementStatus {
+  RECU
+  EN_COURS
+  PRIS_EN_CHARGE
+  RESOLU
+  REJETE
+}
+
+enum SignalementCategory {
+  URBANISME
+  TRANSPORT
+  ENVIRONNEMENT
+  VOIRIE
+  EAU
+  DECHETS
+  EQUIPEMENTS_PUBLICS
+  SANTE
+  EDUCATION
+}
+
+enum ProjectStatus {
+  EN_ATTENTE
+  EN_COURS
+  SUSPENDU
+  TERMINE
+  ANNULE
+}
+
+enum ConsultationStatus {
+  BROUILLON
+  PUBLIEE
+  CLOTUREE
+}
+
+enum NotificationType {
+  SIGNALEMENT_STATUS
+  PROJECT_UPDATE
+  GENERAL
+}
+
+// ---------------------------------------------------------------------------
+// Core entities
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  password  String
+  role      Role     @default(CITOYEN)
+  wilaya    String?
+  ministere String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  signalements       Signalement[]       @relation("CitizenSignalements")
+  assignedSignalements Signalement[]     @relation("AssignedSignalements")
+  statusChanges      SignalementHistory[]
+  projectsCreated    Project[]
+  consultations      Consultation[]
+  votes              Vote[]
+  comments           Comment[]
+  notifications      Notification[]
+
+  @@index([role])
+  @@index([wilaya])
+}
+
+// ---------------------------------------------------------------------------
+// Signalement (Citizen incident report)
+// ---------------------------------------------------------------------------
+
+model Signalement {
+  id          String             @id @default(cuid())
+  title       String
+  description String
+  category    SignalementCategory
+  status      SignalementStatus  @default(RECU)
+  wilaya      String?
+  commune     String?
+  mediaUrls   String[]           @default([])
+
+  // PostGIS geographic point — requires PostGIS extension
+  // Stored as geometry(Point, 4326) with SRID = WGS84
+  location    Unsupported("geometry(Point, 4326)")?
+
+  citizenId   String
+  citizen     User               @relation("CitizenSignalements", fields: [citizenId], references: [id])
+
+  assignedToId String?
+  assignedTo   User?             @relation("AssignedSignalements", fields: [assignedToId], references: [id])
+
+  history     SignalementHistory[]
+  comments    Comment[]
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([wilaya])
+  @@index([citizenId])
+}
+
+model SignalementHistory {
+  id           String            @id @default(cuid())
+  signalementId String
+  signalement  Signalement       @relation(fields: [signalementId], references: [id], onDelete: Cascade)
+  oldStatus    SignalementStatus?
+  newStatus    SignalementStatus
+  comment      String?
+  changedById  String
+  changedBy    User              @relation(fields: [changedById], references: [id])
+  createdAt    DateTime          @default(now())
+
+  @@index([signalementId])
+}
+
+// ---------------------------------------------------------------------------
+// Territorial Project
+// ---------------------------------------------------------------------------
+
+model Project {
+  id               String        @id @default(cuid())
+  title            String
+  description      String
+  sector           String
+  ministere        String?
+  wilaya           String?
+  status           ProjectStatus @default(EN_ATTENTE)
+  budget           Decimal?      @db.Decimal(15, 2)
+  budgetSpent      Decimal?      @db.Decimal(15, 2)
+  advancementRate  Int           @default(0) // 0–100 %
+  startDate        DateTime?
+  endDate          DateTime?
+
+  // Central representative point of the project
+  location         Unsupported("geometry(Point, 4326)")?
+  // Full geographic zone polygon/multipolygon
+  zone             Unsupported("geometry(Geometry, 4326)")?
+
+  createdById      String
+  createdBy        User          @relation(fields: [createdById], references: [id])
+
+  documents        ProjectDocument[]
+  consultations    Consultation[]
+  comments         Comment[]
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([status])
+  @@index([wilaya])
+  @@index([sector])
+}
+
+model ProjectDocument {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  url       String
+  mimeType  String?
+  sizeBytes Int?
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// ---------------------------------------------------------------------------
+// Citizen Participation & Consultations
+// ---------------------------------------------------------------------------
+
+model Consultation {
+  id          String             @id @default(cuid())
+  title       String
+  description String
+  status      ConsultationStatus @default(BROUILLON)
+  projectId   String?
+  project     Project?           @relation(fields: [projectId], references: [id])
+  publishedById String
+  publishedBy   User             @relation(fields: [publishedById], references: [id])
+  closedAt    DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  questions   ConsultationQuestion[]
+  votes       Vote[]
+  comments    Comment[]
+
+  @@index([status])
+  @@index([projectId])
+}
+
+model ConsultationQuestion {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  text           String
+  order          Int          @default(0)
+  answers        QuestionAnswer[]
+
+  @@index([consultationId])
+}
+
+model QuestionAnswer {
+  id         String               @id @default(cuid())
+  questionId String
+  question   ConsultationQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId     String
+  value      String
+  createdAt  DateTime             @default(now())
+
+  @@unique([questionId, userId])
+  @@index([questionId])
+}
+
+model Vote {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  value          Int          // e.g. 1 = for, -1 = against, 0 = neutral
+  createdAt      DateTime     @default(now())
+
+  @@unique([consultationId, userId])
+  @@index([consultationId])
+}
+
+model Comment {
+  id             String        @id @default(cuid())
+  content        String
+  authorId       String
+  author         User          @relation(fields: [authorId], references: [id])
+
+  signalementId  String?
+  signalement    Signalement?  @relation(fields: [signalementId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  consultationId String?
+  consultation   Consultation? @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([signalementId])
+  @@index([projectId])
+  @@index([consultationId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           NotificationType @default(GENERAL)
+  title          String
+  message        String
+  read           Boolean          @default(false)
+  link           String?
+  signalementId  String?
+  createdAt      DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([userId])
+}

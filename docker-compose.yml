@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: gov_djihane_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gov_user
+      POSTGRES_PASSWORD: gov_secure_pass
+      POSTGRES_DB: governance_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - gov_djihane_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gov_user -d governance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gov_djihane_pgdata:
