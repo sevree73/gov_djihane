@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useUploadThing } from '@/lib/uploadthing'
 
 interface ImageUploaderProps {
   onUploadComplete: (urls: string[]) => void
@@ -9,15 +10,22 @@ interface ImageUploaderProps {
 
 type UploadedFile = {
   name: string
-  url: string        // final server URL, empty until upload completes
+  url: string        // final CDN URL, empty until upload completes
   previewUrl: string // local blob URL for instant preview
 }
 
 export default function ImageUploader({ onUploadComplete, maxFiles = 3 }: ImageUploaderProps) {
   const [files, setFiles] = useState<UploadedFile[]>([])
-  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const { startUpload, isUploading } = useUploadThing('signalementImages', {
+    onUploadError: (err) => {
+      setError(err.message)
+      setFiles((prev) => prev.filter((f) => f.url))
+      if (inputRef.current) inputRef.current.value = ''
+    },
+  })
 
   async function handleFiles(selected: FileList | null) {
     if (!selected || selected.length === 0) return
@@ -25,6 +33,7 @@ export default function ImageUploader({ onUploadComplete, maxFiles = 3 }: ImageU
     if (remaining <= 0) return
 
     const newRawFiles = Array.from(selected).slice(0, remaining)
+    setError(null)
 
     // Immediate local previews
     const withPreviews: UploadedFile[] = newRawFiles.map((f) => ({
@@ -33,42 +42,25 @@ export default function ImageUploader({ onUploadComplete, maxFiles = 3 }: ImageU
       previewUrl: URL.createObjectURL(f),
     }))
     setFiles((prev) => [...prev, ...withPreviews])
-    setUploading(true)
-    setError(null)
 
-    try {
-      const fd = new FormData()
-      for (const f of newRawFiles) fd.append('files', f)
+    const uploaded = await startUpload(newRawFiles)
+    if (!uploaded) return // onUploadError already handled the error
 
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error ?? `Erreur serveur (${res.status})`)
-      }
+    const urls = uploaded.map((f) => f.ufsUrl)
 
-      const { urls } = (await res.json()) as { urls: string[] }
-
-      setFiles((prev) => {
-        // Replace the placeholder entries we just added with their final URLs
-        const updated = [...prev]
-        let urlIdx = 0
-        for (let i = 0; i < updated.length; i++) {
-          if (!updated[i].url && urlIdx < urls.length) {
-            updated[i] = { ...updated[i], url: urls[urlIdx++] }
-          }
+    setFiles((prev) => {
+      const updated = [...prev]
+      let urlIdx = 0
+      for (let i = 0; i < updated.length; i++) {
+        if (!updated[i].url && urlIdx < urls.length) {
+          updated[i] = { ...updated[i], url: urls[urlIdx++] }
         }
-        onUploadComplete(updated.filter((f) => f.url).map((f) => f.url))
-        return updated
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur d'upload")
-      // Remove the placeholder previews that failed
-      setFiles((prev) => prev.filter((f) => f.url))
-    } finally {
-      setUploading(false)
-      // Reset input so the same file can be re-selected after an error
-      if (inputRef.current) inputRef.current.value = ''
-    }
+      }
+      onUploadComplete(updated.filter((f) => f.url).map((f) => f.url))
+      return updated
+    })
+
+    if (inputRef.current) inputRef.current.value = ''
   }
 
   function removeFile(idx: number) {
@@ -77,7 +69,7 @@ export default function ImageUploader({ onUploadComplete, maxFiles = 3 }: ImageU
     onUploadComplete(updated.filter((f) => f.url).map((f) => f.url))
   }
 
-  const canAdd = files.length < maxFiles && !uploading
+  const canAdd = files.length < maxFiles && !isUploading
 
   return (
     <div className="space-y-3">
@@ -93,7 +85,7 @@ export default function ImageUploader({ onUploadComplete, maxFiles = 3 }: ImageU
               <img src={f.previewUrl} alt={f.name} className="w-full h-full object-cover" />
 
               {/* Upload spinner overlay */}
-              {!f.url && uploading && (
+              {!f.url && isUploading && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 </div>
@@ -135,7 +127,7 @@ export default function ImageUploader({ onUploadComplete, maxFiles = 3 }: ImageU
         </button>
       )}
 
-      {uploading && (
+      {isUploading && (
         <p className="text-xs text-emerald-400 flex items-center gap-1.5">
           <span className="w-3 h-3 border border-emerald-400 border-t-transparent rounded-full animate-spin" />
           Upload en cours…
