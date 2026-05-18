@@ -88,6 +88,114 @@ export async function closeConsultation(formData: FormData): Promise<void> {
   revalidatePath('/admin/consultations')
 }
 
+export async function reopenConsultation(formData: FormData): Promise<void> {
+  await requireAdmin()
+  const id = formData.get('id') as string
+  await prisma.consultation.update({
+    where: { id },
+    data: { status: 'PUBLIEE', closedAt: null },
+  })
+  revalidatePath('/admin/consultations')
+}
+
+// ── Admin: edit consultation ─────────────────────────────────────────────────
+
+export type UpdateConsultationState = { error?: string; success?: boolean } | undefined
+
+export async function updateConsultationMeta(
+  _prev: UpdateConsultationState,
+  formData: FormData,
+): Promise<UpdateConsultationState> {
+  await requireAdmin()
+  const id = formData.get('id') as string
+
+  const parsed = z.object({
+    title: z.string().min(5).max(200),
+    description: z.string().min(10).max(2000),
+  }).safeParse({
+    title: formData.get('title'),
+    description: formData.get('description'),
+  })
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Données invalides' }
+  }
+
+  await prisma.consultation.update({
+    where: { id },
+    data: { title: parsed.data.title, description: parsed.data.description },
+  })
+
+  revalidatePath(`/admin/consultations/${id}/modifier`)
+  revalidatePath('/admin/consultations')
+  return { success: true }
+}
+
+export async function deleteConsultationQuestion(formData: FormData): Promise<void> {
+  await requireAdmin()
+  const questionId = formData.get('questionId') as string
+  const consultationId = formData.get('consultationId') as string
+
+  await prisma.consultationQuestion.delete({ where: { id: questionId } })
+  revalidatePath(`/admin/consultations/${consultationId}/modifier`)
+}
+
+export async function addConsultationQuestion(formData: FormData): Promise<void> {
+  await requireAdmin()
+  const consultationId = formData.get('consultationId') as string
+  const text = (formData.get('text') as string)?.trim()
+
+  if (!text || text.length < 2 || text.length > 500) return
+
+  const agg = await prisma.consultationQuestion.aggregate({
+    where: { consultationId },
+    _max: { order: true },
+  })
+
+  await prisma.consultationQuestion.create({
+    data: { consultationId, text, order: (agg._max.order ?? 0) + 1 },
+  })
+
+  revalidatePath(`/admin/consultations/${consultationId}/modifier`)
+}
+
+export async function deleteConsultationResponse(formData: FormData): Promise<void> {
+  await requireAdmin()
+  const voteId = formData.get('voteId') as string
+  const consultationId = formData.get('consultationId') as string
+
+  const vote = await prisma.vote.findUnique({ where: { id: voteId } })
+  if (!vote) return
+
+  const questions = await prisma.consultationQuestion.findMany({
+    where: { consultationId },
+    select: { id: true },
+  })
+
+  await prisma.$transaction([
+    prisma.questionAnswer.deleteMany({
+      where: { userId: vote.userId, questionId: { in: questions.map((q) => q.id) } },
+    }),
+    prisma.vote.delete({ where: { id: voteId } }),
+  ])
+
+  revalidatePath(`/admin/consultations/${consultationId}/reponses`)
+}
+
+export async function addAdminConsultationComment(formData: FormData): Promise<void> {
+  const session = await requireAdmin()
+  const consultationId = formData.get('consultationId') as string
+  const content = (formData.get('content') as string)?.trim()
+
+  if (!content || content.length < 2 || content.length > 1000) return
+
+  await prisma.comment.create({
+    data: { content, authorId: session.userId, consultationId },
+  })
+
+  revalidatePath(`/admin/consultations/${consultationId}/reponses`)
+}
+
 // ── Citizen: submit vote + answers ───────────────────────────────────────────
 
 export type ParticipationState = { error?: string; success?: boolean } | undefined

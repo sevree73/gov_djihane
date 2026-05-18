@@ -145,12 +145,6 @@ export default function ProjectDrawer({ projectId, onClose }: ProjectDrawerProps
 
             {/* Meta grid */}
             <div className="grid grid-cols-2 gap-3 text-sm">
-              {project.budget && (
-                <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Budget</p>
-                  <p className="text-gray-200 font-medium">{formatBudget(project.budget)}</p>
-                </div>
-              )}
               {project.startDate && (
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Début</p>

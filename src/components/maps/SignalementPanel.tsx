@@ -33,6 +33,12 @@ export default function SignalementPanel({ point, defaultWilaya, onClose, onSucc
     setFormState('submitting')
     setErrorMsg('')
 
+    if (mediaUrls.length === 0) {
+      setFormState('error')
+      setErrorMsg('Veuillez ajouter au moins une photo du problème.')
+      return
+    }
+
     const fd = new FormData(e.currentTarget)
     const payload = {
       title: fd.get('title') as string,
@@ -192,7 +198,8 @@ export default function SignalementPanel({ point, defaultWilaya, onClose, onSucc
           {/* Photos */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Photos (optionnel, max 3)
+              Photos <span className="text-red-400">*</span>
+              <span className="text-xs font-normal text-gray-500 ml-1">(max 3, obligatoire)</span>
             </label>
             <ImageUploader onUploadComplete={setMediaUrls} maxFiles={3} />
           </div>

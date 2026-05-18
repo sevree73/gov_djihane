@@ -26,6 +26,7 @@ export default function AdminLoginForm() {
           type="email"
           autoComplete="username"
           required
+          defaultValue={state?.values?.email ?? ''}
           placeholder="agent@gouvernance.dz"
           className="w-full rounded-lg bg-gray-700 border border-gray-600 px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition"
         />

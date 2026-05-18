@@ -33,23 +33,19 @@ function StatusUpdateRow({
 
   return (
     <>
-      <tr className="hover:bg-gray-50 transition-colors">
-        {/* Title — clickable to open detail modal */}
+      <tr
+        onClick={() => onViewDetails(s)}
+        className="hover:bg-blue-50 cursor-pointer transition-colors"
+      >
         <td className="px-4 py-3">
-          <button
-            type="button"
-            onClick={() => onViewDetails(s)}
-            className="text-left group"
-          >
-            <p className="text-sm font-medium text-gray-900 group-hover:text-blue-700 max-w-[200px] truncate transition-colors">
-              {s.title}
+          <p className="text-sm font-medium text-gray-900 group-hover:text-blue-700 max-w-[200px] truncate transition-colors">
+            {s.title}
+          </p>
+          {s.mediaUrls?.length > 0 && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              {s.mediaUrls.length} photo{s.mediaUrls.length > 1 ? 's' : ''}
             </p>
-            {s.mediaUrls?.length > 0 && (
-              <p className="text-xs text-gray-400 mt-0.5">
-                {s.mediaUrls.length} photo{s.mediaUrls.length > 1 ? 's' : ''}
-              </p>
-            )}
-          </button>
+          )}
         </td>
 
         <td className="px-4 py-3 text-xs text-gray-500">
@@ -69,7 +65,7 @@ function StatusUpdateRow({
             day: '2-digit', month: 'short', year: 'numeric',
           })}
         </td>
-        <td className="px-4 py-3 text-right">
+        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
           {nextStatuses.length > 0 && (
             <button
               onClick={() => setOpen((v) => !v)}
@@ -82,7 +78,7 @@ function StatusUpdateRow({
       </tr>
 
       {open && nextStatuses.length > 0 && (
-        <tr className="bg-blue-50 border-t border-blue-100">
+        <tr className="bg-blue-50 border-t border-blue-100" onClick={(e) => e.stopPropagation()}>
           <td colSpan={7} className="px-4 py-3">
             <form action={action} className="flex flex-wrap items-end gap-3">
               <input type="hidden" name="signalementId" value={s.id} />

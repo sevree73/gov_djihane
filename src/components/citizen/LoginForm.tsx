@@ -26,6 +26,7 @@ export default function CitizenLoginForm() {
           type="email"
           autoComplete="email"
           required
+          defaultValue={state?.values?.email ?? ''}
           placeholder="citoyen@example.dz"
           className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition"
         />

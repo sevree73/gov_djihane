@@ -65,11 +65,22 @@ export default async function UtilisateursPage({
   return (
     <div className="p-8">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Gestion des utilisateurs</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          {total} utilisateur{total !== 1 ? 's' : ''}
-        </p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des utilisateurs</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {total} utilisateur{total !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <a
+          href="/api/admin/export/utilisateurs"
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Exporter CSV
+        </a>
       </div>
 
       {/* Search form */}

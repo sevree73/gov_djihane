@@ -12,13 +12,14 @@ const WILAYA_ROLES: Role[] = ['ADMIN_WILAYA', 'GESTIONNAIRE_TERRITORIAL', 'AGENT
 export default async function ProjetsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; wilaya?: string; page?: string }>
+  searchParams: Promise<{ status?: string; wilaya?: string; page?: string; q?: string }>
 }) {
   const session = await requireAdmin()
   const params = await searchParams
 
   const statusFilter = params.status || undefined
   const wilayaFilter = params.wilaya || undefined
+  const q = params.q?.trim() || undefined
   const page = Math.max(1, parseInt(params.page ?? '1'))
   const perPage = 25
 
@@ -28,6 +29,10 @@ export default async function ProjetsPage({
   const where = {
     ...(scopedWilaya ? { wilaya: scopedWilaya } : wilayaFilter ? { wilaya: wilayaFilter } : {}),
     ...(statusFilter ? { status: statusFilter as never } : {}),
+    ...(q ? { OR: [
+      { title: { contains: q, mode: 'insensitive' as const } },
+      { description: { contains: q, mode: 'insensitive' as const } },
+    ]} : {}),
   }
 
   const [projets, total] = await Promise.all([
@@ -55,18 +60,56 @@ export default async function ProjetsPage({
             {scopedWilaya ? ` — Wilaya de ${scopedWilaya}` : ''}
           </p>
         </div>
-        {canCreate && (
-          <Link
-            href="/admin/projets/nouveau"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/admin/export/projets${statusFilter || wilayaFilter || q ? `?${new URLSearchParams({ ...(statusFilter ? { status: statusFilter } : {}), ...(wilayaFilter ? { wilaya: wilayaFilter } : {}), ...(q ? { q } : {}) }).toString()}` : ''}`}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Nouveau projet
-          </Link>
-        )}
+            Exporter CSV
+          </a>
+          {canCreate && (
+            <Link
+              href="/admin/projets/nouveau"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Nouveau projet
+            </Link>
+          )}
+        </div>
       </div>
+
+      {/* Search */}
+      <form method="GET" className="mb-4 flex gap-3">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q ?? ''}
+          placeholder="Rechercher par titre ou description…"
+          className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none shadow-sm"
+        />
+        {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
+        {(wilayaFilter && !scopedWilaya) && <input type="hidden" name="wilaya" value={wilayaFilter} />}
+        <button
+          type="submit"
+          className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          Rechercher
+        </button>
+        {q && (
+          <a
+            href={`/admin/projets${statusFilter ? `?status=${statusFilter}` : ''}`}
+            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 flex items-center"
+          >
+            Effacer
+          </a>
+        )}
+      </form>
 
       {/* Filters */}
       <div className="mb-6">

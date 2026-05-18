@@ -4,7 +4,9 @@ import { prisma } from '@/lib/prisma'
 import {
   publishConsultation,
   closeConsultation,
+  reopenConsultation,
 } from '@/app/actions/consultations'
+
 
 const STATUS_LABELS: Record<string, string> = {
   BROUILLON: 'Brouillon',
@@ -40,15 +42,26 @@ export default async function ConsultationsPage() {
             {consultations.length} consultation{consultations.length > 1 ? 's' : ''}
           </p>
         </div>
-        <Link
-          href="/admin/consultations/nouveau"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nouvelle consultation
-        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/admin/export/consultations"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Exporter CSV
+          </a>
+          <Link
+            href="/admin/consultations/nouveau"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nouvelle consultation
+          </Link>
+        </div>
       </div>
 
       {/* List */}
@@ -108,7 +121,24 @@ export default async function ConsultationsPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <Link
+                    href={`/admin/consultations/${c.id}/modifier`}
+                    className="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg transition-colors"
+                  >
+                    Modifier
+                  </Link>
+                  <Link
+                    href={`/admin/consultations/${c.id}/reponses`}
+                    className="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    Réponses
+                    {c._count.votes > 0 && (
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-blue-600 text-white rounded-full">
+                        {c._count.votes}
+                      </span>
+                    )}
+                  </Link>
                   {c.status === 'BROUILLON' && (
                     <form action={publishConsultation}>
                       <input type="hidden" name="id" value={c.id} />
@@ -128,6 +158,17 @@ export default async function ConsultationsPage() {
                         className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors"
                       >
                         Clôturer
+                      </button>
+                    </form>
+                  )}
+                  {c.status === 'CLOTUREE' && (
+                    <form action={reopenConsultation}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-medium rounded-lg transition-colors"
+                      >
+                        Rouvrir
                       </button>
                     </form>
                   )}
