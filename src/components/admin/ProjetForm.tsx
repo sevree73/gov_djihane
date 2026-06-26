@@ -1,19 +1,8 @@
 'use client'
 
-import { useActionState, useState } from 'react'
-import dynamic from 'next/dynamic'
+import { useActionState } from 'react'
 import { createProjet, type ProjetFormState } from '@/app/actions/projets'
 import { ALGERIAN_WILAYAS, PROJECT_STATUSES } from '@/lib/constants'
-import type { GeoPoint } from '@/types'
-
-const LocationPicker = dynamic(() => import('./LocationPicker'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-      <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-    </div>
-  ),
-})
 
 const SECTORS = [
   'Eau et Assainissement', 'Transport et Infrastructure', 'Éducation',
@@ -33,8 +22,8 @@ export type ProjectInitialData = {
   budget: number | null
   budgetSpent: number | null
   advancementRate: number
-  startDate: string | null  // YYYY-MM-DD
-  endDate: string | null    // YYYY-MM-DD
+  startDate: string | null
+  endDate: string | null
 }
 
 const PRIORITY_OPTIONS = [
@@ -48,22 +37,17 @@ interface ProjetFormProps {
   defaultWilaya?: string | null
   serverAction?: (prev: ProjetFormState, formData: FormData) => Promise<ProjetFormState>
   initialData?: ProjectInitialData
-  initialLocation?: GeoPoint | null
 }
 
 export default function ProjetForm({
   defaultWilaya,
   serverAction,
   initialData,
-  initialLocation,
 }: ProjetFormProps) {
   const [state, action, pending] = useActionState<ProjetFormState, FormData>(
     serverAction ?? createProjet,
     undefined,
   )
-
-  const [location, setLocation] = useState<GeoPoint | null>(initialLocation ?? null)
-  const [showPicker, setShowPicker] = useState(false)
 
   const errors = (state as { errors?: Record<string, string[]> } | undefined)?.errors
   const general = (state as { general?: string } | undefined)?.general
@@ -254,53 +238,6 @@ export default function ProjetForm({
             className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
           />
         </div>
-      </div>
-
-      {/* Location picker */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Localisation géographique (optionnel)
-          </label>
-          <button
-            type="button"
-            onClick={() => setShowPicker((v) => !v)}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
-          >
-            {showPicker ? 'Masquer la carte' : location ? 'Modifier la position' : 'Choisir sur la carte'}
-          </button>
-        </div>
-
-        {location && !showPicker && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-            <svg className="w-4 h-4 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-            </svg>
-            <span className="text-sm text-blue-700">
-              {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-            </span>
-            <button
-              type="button"
-              onClick={() => setLocation(null)}
-              className="ml-auto text-blue-400 hover:text-blue-600"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {showPicker && (
-          <div className="h-64 rounded-xl overflow-hidden border border-gray-300">
-            <LocationPicker
-              onSelect={(pt) => { setLocation(pt); setShowPicker(false) }}
-              initial={location}
-            />
-          </div>
-        )}
-
-        {/* Hidden inputs for lat/lng */}
-        <input type="hidden" name="lat" value={location?.lat ?? ''} />
-        <input type="hidden" name="lng" value={location?.lng ?? ''} />
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">

@@ -26,8 +26,6 @@ const ProjetSchema = z.object({
   advancementRate: z.coerce.number().min(0).max(100).default(0),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  lat: z.coerce.number().min(-90).max(90).optional(),
-  lng: z.coerce.number().min(-180).max(180).optional(),
 })
 
 export async function createProjet(
@@ -49,8 +47,6 @@ export async function createProjet(
     advancementRate: formData.get('advancementRate') ?? 0,
     startDate: formData.get('startDate') || undefined,
     endDate: formData.get('endDate') || undefined,
-    lat: formData.get('lat') || undefined,
-    lng: formData.get('lng') || undefined,
   }
 
   const parsed = ProjetSchema.safeParse(raw)
@@ -70,46 +66,23 @@ export async function createProjet(
   }
 
   try {
-    if (d.lat !== undefined && d.lng !== undefined) {
-      await prisma.$queryRaw`
-        INSERT INTO "Project" (
-          id, title, description, sector, wilaya, ministere, status, priority,
-          budget, "budgetSpent", "advancementRate",
-          "startDate", "endDate", location,
-          "createdById", "createdAt", "updatedAt"
-        )
-        VALUES (
-          gen_random_uuid(),
-          ${d.title}, ${d.description}, ${d.sector},
-          ${d.wilaya ?? null}, ${d.ministere ?? null},
-          ${d.status}::"ProjectStatus",
-          ${d.priority}::"ProjectPriority",
-          ${d.budget ?? null}, ${d.budgetSpent ?? null}, ${d.advancementRate},
-          ${d.startDate ? new Date(d.startDate) : null},
-          ${d.endDate ? new Date(d.endDate) : null},
-          ST_SetSRID(ST_MakePoint(${d.lng}, ${d.lat}), 4326),
-          ${session.userId}, NOW(), NOW()
-        )
-      `
-    } else {
-      await prisma.project.create({
-        data: {
-          title: d.title,
-          description: d.description,
-          sector: d.sector,
-          wilaya: d.wilaya ?? null,
-          ministere: d.ministere ?? null,
-          status: d.status as ProjectStatus,
-          priority: d.priority as 'BASSE' | 'NORMALE' | 'HAUTE' | 'CRITIQUE',
-          budget: d.budget ?? null,
-          budgetSpent: d.budgetSpent ?? null,
-          advancementRate: d.advancementRate,
-          startDate: d.startDate ? new Date(d.startDate) : null,
-          endDate: d.endDate ? new Date(d.endDate) : null,
-          createdById: session.userId,
-        },
-      })
-    }
+    await prisma.project.create({
+      data: {
+        title: d.title,
+        description: d.description,
+        sector: d.sector,
+        wilaya: d.wilaya ?? null,
+        ministere: d.ministere ?? null,
+        status: d.status as ProjectStatus,
+        priority: d.priority as 'BASSE' | 'NORMALE' | 'HAUTE' | 'CRITIQUE',
+        budget: d.budget ?? null,
+        budgetSpent: d.budgetSpent ?? null,
+        advancementRate: d.advancementRate,
+        startDate: d.startDate ? new Date(d.startDate) : null,
+        endDate: d.endDate ? new Date(d.endDate) : null,
+        createdById: session.userId,
+      },
+    })
   } catch (err) {
     console.error('[createProjet]', err)
     return { general: 'Erreur lors de la création du projet' }
@@ -174,8 +147,6 @@ export async function updateProjet(
     advancementRate: formData.get('advancementRate') ?? 0,
     startDate: formData.get('startDate') || undefined,
     endDate: formData.get('endDate') || undefined,
-    lat: formData.get('lat') || undefined,
-    lng: formData.get('lng') || undefined,
   }
 
   const parsed = ProjetSchema.safeParse(raw)
@@ -217,13 +188,6 @@ export async function updateProjet(
         updatedAt: new Date(),
       },
     })
-
-    if (d.lat !== undefined && d.lng !== undefined) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE "Project" SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326) WHERE id = $3`,
-        d.lng, d.lat, projectId,
-      )
-    }
   } catch (err) {
     console.error('[updateProjet]', err)
     return { general: 'Erreur lors de la mise à jour du projet' }

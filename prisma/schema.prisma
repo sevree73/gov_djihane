@@ -217,6 +217,7 @@ model PAT {
   id         String      @id @default(cuid())
   name       String
   avancement Int         @default(0) // 0–100 %, set manually by admin
+  location   Unsupported("geometry(Point, 4326)")?
   projectId  String
   project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   actions   PATAction[]

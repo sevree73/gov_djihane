@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma'
 import { updateProjet } from '@/app/actions/projets'
 import ProjetForm, { type ProjectInitialData } from '@/components/admin/ProjetForm'
 import type { Role } from '@/types'
-import type { GeoPoint } from '@/types'
 
 const WILAYA_ROLES: Role[] = ['ADMIN_WILAYA', 'GESTIONNAIRE_TERRITORIAL', 'AGENT_TECHNIQUE']
 
@@ -17,22 +16,13 @@ export default async function ModifierProjetPage({
   const { id } = await params
   const session = await requireAdmin()
 
-  const [project, locRows] = await Promise.all([
-    prisma.project.findUnique({ where: { id } }),
-    prisma.$queryRawUnsafe<{ lat: number; lng: number }[]>(
-      `SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
-       FROM "Project" WHERE id = $1 AND location IS NOT NULL`,
-      id,
-    ),
-  ])
+  const project = await prisma.project.findUnique({ where: { id } })
 
   if (!project) notFound()
 
   if (WILAYA_ROLES.includes(session.role as Role)) {
     if (project.wilaya && project.wilaya !== session.wilaya) notFound()
   }
-
-  const initialLocation: GeoPoint | null = locRows[0] ?? null
 
   const initialData: ProjectInitialData = {
     title: project.title,
@@ -73,7 +63,6 @@ export default async function ModifierProjetPage({
           defaultWilaya={session.wilaya}
           serverAction={updateAction}
           initialData={initialData}
-          initialLocation={initialLocation}
         />
       </div>
     </div>

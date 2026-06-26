@@ -9,6 +9,7 @@ import {
   updatePATActionStatus,
   deletePATAction,
 } from '@/app/actions/pats'
+import PATLocationSection from '@/components/admin/PATLocationSection'
 
 // ── Computed indicateurs ──────────────────────────────────────────────────────
 
@@ -59,16 +60,23 @@ export default async function PATDetailPage({
   await requireAdmin()
   const { id: projectId, patId } = await params
 
-  const pat = await prisma.pAT.findUnique({
-    where: { id: patId },
-    include: {
-      project: { select: { id: true, title: true, wilaya: true } },
-      actions: { orderBy: { createdAt: 'asc' } },
-    },
-  })
+  const [pat, locRows] = await Promise.all([
+    prisma.pAT.findUnique({
+      where: { id: patId },
+      include: {
+        project: { select: { id: true, title: true, wilaya: true } },
+        actions: { orderBy: { createdAt: 'asc' } },
+      },
+    }),
+    prisma.$queryRawUnsafe<{ lat: number; lng: number }[]>(
+      `SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng FROM "PAT" WHERE id = $1 AND location IS NOT NULL`,
+      patId,
+    ),
+  ])
 
   if (!pat || pat.projectId !== projectId) notFound()
 
+  const patLocation = locRows[0] ?? null
   const ind = computeIndicateurs(pat.actions)
   const suivis = pat.actions.filter((a) => a.status === 'DONE')
   const today = new Date().toISOString().split('T')[0]
@@ -151,6 +159,14 @@ export default async function PATDetailPage({
           </p>
         </div>
       )}
+
+      {/* Location */}
+      <PATLocationSection
+        patId={patId}
+        wilaya={pat.project.wilaya}
+        initialLat={patLocation?.lat}
+        initialLng={patLocation?.lng}
+      />
 
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-4">

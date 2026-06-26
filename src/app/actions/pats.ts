@@ -39,7 +39,11 @@ export async function createPAT(
     initialActions.push({ text, deadline })
   }
 
-  await prisma.pAT.create({
+  const lat = parseFloat(formData.get('lat') as string)
+  const lng = parseFloat(formData.get('lng') as string)
+  const hasLocation = !isNaN(lat) && !isNaN(lng)
+
+  const created = await prisma.pAT.create({
     data: {
       name: parsed.data,
       avancement,
@@ -49,6 +53,13 @@ export async function createPAT(
       },
     },
   })
+
+  if (hasLocation) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "PAT" SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326) WHERE id = $3`,
+      lng, lat, created.id,
+    )
+  }
 
   revalidatePath(`/admin/projets/${projectId}/pats`)
   redirect(`/admin/projets/${projectId}/pats`)
@@ -77,6 +88,25 @@ export async function deletePAT(formData: FormData): Promise<void> {
   await prisma.pAT.delete({ where: { id: patId } })
   revalidatePath(`/admin/projets/${projectId}/pats`)
   redirect(`/admin/projets/${projectId}/pats`)
+}
+
+export async function updatePATLocation(formData: FormData): Promise<void> {
+  await requireAdmin()
+
+  const patId = formData.get('patId') as string
+  const lat = parseFloat(formData.get('lat') as string)
+  const lng = parseFloat(formData.get('lng') as string)
+
+  if (isNaN(lat) || isNaN(lng)) return
+
+  const pat = await prisma.pAT.findUnique({ where: { id: patId }, select: { projectId: true } })
+  if (!pat) return
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE "PAT" SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326) WHERE id = $3`,
+    lng, lat, patId,
+  )
+  revalidatePath(`/admin/projets/${pat.projectId}/pats/${patId}`)
 }
 
 // ── PAT Actions CRUD ─────────────────────────────────────────────────────────
