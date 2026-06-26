@@ -131,7 +131,7 @@ export default async function ProjetsPage({
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Titre', 'Secteur', 'Statut', 'Avancement', 'Wilaya', 'Dates', 'Créé par', 'Actions'].map((h) => (
+                  {['Titre', 'Secteur', 'Statut', 'Avancement', 'Wilaya', 'Dates', 'Créé par', ''].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       {h}
                     </th>
@@ -168,12 +168,20 @@ export default async function ProjetsPage({
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">{p.createdBy.name}</td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/projets/${p.id}/modifier`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                      >
-                        Modifier
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/admin/projets/${p.id}/modifier`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        >
+                          Modifier
+                        </Link>
+                        <Link
+                          href={`/admin/projets/${p.id}/pats`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                        >
+                          PATs
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
