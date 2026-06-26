@@ -3,22 +3,37 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import CommentSection from '@/components/citizen/CommentSection'
+import PATWilayaView, { type PATViewData } from '@/components/citizen/PATWilayaView'
 import { PROJECT_STATUSES } from '@/lib/constants'
 
 const STATUS_COLORS: Record<string, string> = {
   EN_ATTENTE: 'bg-gray-100 text-gray-600',
-  EN_COURS: 'bg-blue-100 text-blue-700',
-  SUSPENDU: 'bg-amber-100 text-amber-700',
-  TERMINE: 'bg-emerald-100 text-emerald-700',
-  ANNULE: 'bg-red-100 text-red-600',
+  EN_COURS:   'bg-blue-100 text-blue-700',
+  SUSPENDU:   'bg-amber-100 text-amber-700',
+  TERMINE:    'bg-emerald-100 text-emerald-700',
+  ANNULE:     'bg-red-100 text-red-600',
 }
 
 const ADVANCEMENT_COLORS: Record<string, string> = {
   EN_ATTENTE: '#9ca3af',
-  EN_COURS: '#3b82f6',
-  SUSPENDU: '#f59e0b',
-  TERMINE: '#10b981',
-  ANNULE: '#ef4444',
+  EN_COURS:   '#3b82f6',
+  SUSPENDU:   '#f59e0b',
+  TERMINE:    '#10b981',
+  ANNULE:     '#ef4444',
+}
+
+function computePATIndicateurs(actions: { status: string }[]): Omit<PATViewData, 'id' | 'name' | 'avancement'> {
+  const programmees = actions.length
+  const achevees    = actions.filter((a) => a.status === 'DONE').length
+  const enCours     = actions.filter((a) => a.status === 'EN_COURS').length
+  const enRetard    = actions.filter((a) => a.status === 'RETARD').length
+  const IAP         = programmees > 0 ? (achevees + 0.5 * enCours) / programmees : 0
+  const scorePAT    = Math.round(IAP * 5 * 10) / 10
+  let niveauDeRisque: 'FAIBLE' | 'MOYEN' | 'ÉLEVÉ'
+  if (IAP >= 0.7) niveauDeRisque = 'FAIBLE'
+  else if (IAP >= 0.4) niveauDeRisque = 'MOYEN'
+  else niveauDeRisque = 'ÉLEVÉ'
+  return { programmees, achevees, enCours, enRetard, IAP, scorePAT, niveauDeRisque }
 }
 
 export default async function ProjetDetailPage({
@@ -34,6 +49,12 @@ export default async function ProjetDetailPage({
       where: { id },
       include: {
         createdBy: { select: { name: true } },
+        pats: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            actions: { select: { status: true } },
+          },
+        },
       },
     }),
     prisma.comment.findMany({
@@ -50,15 +71,22 @@ export default async function ProjetDetailPage({
 
   if (!project) notFound()
 
+  const patData: PATViewData[] = project.pats.map((pat) => ({
+    id:         pat.id,
+    name:       pat.name,
+    avancement: pat.avancement,
+    ...computePATIndicateurs(pat.actions),
+  }))
+
   const statusLabel = PROJECT_STATUSES[project.status as keyof typeof PROJECT_STATUSES] ?? project.status
   const statusClass = STATUS_COLORS[project.status] ?? 'bg-gray-100 text-gray-600'
-  const barColor = ADVANCEMENT_COLORS[project.status] ?? '#6b7280'
+  const barColor    = ADVANCEMENT_COLORS[project.status] ?? '#6b7280'
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
-        <Link href="/" className="text-gray-400 hover:text-gray-700 transition-colors">
+        <Link href="/carte" className="text-gray-400 hover:text-gray-700 transition-colors">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -68,10 +96,9 @@ export default async function ProjetDetailPage({
         <span className="text-sm text-gray-800 font-medium truncate">{project.title}</span>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         {/* Project card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
@@ -84,7 +111,6 @@ export default async function ProjetDetailPage({
             </span>
           </div>
 
-          {/* Advancement */}
           <div className="mb-5">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs text-gray-500 font-medium">Avancement</span>
@@ -98,7 +124,6 @@ export default async function ProjetDetailPage({
             </div>
           </div>
 
-          {/* Meta grid */}
           <div className="grid grid-cols-2 gap-4 mb-5 text-sm">
             {project.wilaya && (
               <div>
@@ -110,9 +135,7 @@ export default async function ProjetDetailPage({
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Date de début</p>
                 <p className="font-medium text-gray-800">
-                  {new Date(project.startDate).toLocaleDateString('fr-DZ', {
-                    month: 'long', year: 'numeric',
-                  })}
+                  {new Date(project.startDate).toLocaleDateString('fr-DZ', { month: 'long', year: 'numeric' })}
                 </p>
               </div>
             )}
@@ -120,9 +143,7 @@ export default async function ProjetDetailPage({
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Échéance</p>
                 <p className="font-medium text-gray-800">
-                  {new Date(project.endDate).toLocaleDateString('fr-DZ', {
-                    month: 'long', year: 'numeric',
-                  })}
+                  {new Date(project.endDate).toLocaleDateString('fr-DZ', { month: 'long', year: 'numeric' })}
                 </p>
               </div>
             )}
@@ -132,17 +153,24 @@ export default async function ProjetDetailPage({
             </div>
           </div>
 
-          {/* Description */}
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">
-              Description
-            </p>
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {project.description}
-            </p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Description</p>
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{project.description}</p>
           </div>
         </div>
 
+        {/* PAT section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Plans d&apos;Aménagement du Territoire</h2>
+              <p className="text-sm text-gray-400 mt-0.5">
+                {patData.length} PAT{patData.length !== 1 ? 's' : ''} associé{patData.length !== 1 ? 's' : ''} à ce projet
+              </p>
+            </div>
+          </div>
+          <PATWilayaView pats={patData} wilayaName={project.wilaya} />
+        </div>
 
         {/* Comment section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
