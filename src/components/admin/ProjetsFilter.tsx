@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
+import { ALGERIAN_WILAYAS } from '@/lib/constants'
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Tous les statuts' },
@@ -23,7 +24,8 @@ export default function ProjetsFilter() {
   const [isPending, startTransition] = useTransition()
 
   const status = params.get('status') ?? ''
-  const hasFilter = !!status
+  const wilaya = params.get('wilaya') ?? ''
+  const hasFilter = !!(status || wilaya)
 
   function navigate(updates: Record<string, string>) {
     const p = new URLSearchParams(params.toString())
@@ -52,6 +54,18 @@ export default function ProjetsFilter() {
         ))}
       </select>
 
+      <select
+        value={wilaya}
+        onChange={(e) => navigate({ wilaya: e.target.value })}
+        className={SELECT_CLASS}
+        aria-label="Filtrer par wilaya"
+      >
+        <option value="">— Toutes les wilayas —</option>
+        {ALGERIAN_WILAYAS.map((w) => (
+          <option key={w} value={w}>{w}</option>
+        ))}
+      </select>
+
       {isPending && (
         <span className="flex items-center gap-1.5 text-xs text-gray-400">
           <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -62,7 +76,7 @@ export default function ProjetsFilter() {
       {hasFilter && !isPending && (
         <button
           type="button"
-          onClick={() => navigate({ status: '' })}
+          onClick={() => navigate({ status: '', wilaya: '' })}
           className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors px-2 py-1 rounded-md hover:bg-gray-100"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

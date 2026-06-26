@@ -20,6 +20,7 @@ const ProjetSchema = z.object({
   wilaya: z.string().optional(),
   ministere: z.string().optional(),
   status: z.enum(['EN_ATTENTE', 'EN_COURS', 'SUSPENDU', 'TERMINE', 'ANNULE']),
+  priority: z.enum(['BASSE', 'NORMALE', 'HAUTE', 'CRITIQUE']).default('NORMALE'),
   budget: z.coerce.number().min(0).optional(),
   budgetSpent: z.coerce.number().min(0).optional(),
   advancementRate: z.coerce.number().min(0).max(100).default(0),
@@ -42,6 +43,7 @@ export async function createProjet(
     wilaya: formData.get('wilaya') || undefined,
     ministere: formData.get('ministere') || undefined,
     status: formData.get('status') ?? 'EN_ATTENTE',
+    priority: formData.get('priority') || 'NORMALE',
     budget: formData.get('budget') || undefined,
     budgetSpent: formData.get('budgetSpent') || undefined,
     advancementRate: formData.get('advancementRate') ?? 0,
@@ -71,7 +73,7 @@ export async function createProjet(
     if (d.lat !== undefined && d.lng !== undefined) {
       await prisma.$queryRaw`
         INSERT INTO "Project" (
-          id, title, description, sector, wilaya, ministere, status,
+          id, title, description, sector, wilaya, ministere, status, priority,
           budget, "budgetSpent", "advancementRate",
           "startDate", "endDate", location,
           "createdById", "createdAt", "updatedAt"
@@ -81,6 +83,7 @@ export async function createProjet(
           ${d.title}, ${d.description}, ${d.sector},
           ${d.wilaya ?? null}, ${d.ministere ?? null},
           ${d.status}::"ProjectStatus",
+          ${d.priority}::"ProjectPriority",
           ${d.budget ?? null}, ${d.budgetSpent ?? null}, ${d.advancementRate},
           ${d.startDate ? new Date(d.startDate) : null},
           ${d.endDate ? new Date(d.endDate) : null},
@@ -97,6 +100,7 @@ export async function createProjet(
           wilaya: d.wilaya ?? null,
           ministere: d.ministere ?? null,
           status: d.status as ProjectStatus,
+          priority: d.priority as 'BASSE' | 'NORMALE' | 'HAUTE' | 'CRITIQUE',
           budget: d.budget ?? null,
           budgetSpent: d.budgetSpent ?? null,
           advancementRate: d.advancementRate,
@@ -164,6 +168,7 @@ export async function updateProjet(
     wilaya: formData.get('wilaya') || undefined,
     ministere: formData.get('ministere') || undefined,
     status: formData.get('status') ?? 'EN_ATTENTE',
+    priority: formData.get('priority') || 'NORMALE',
     budget: formData.get('budget') || undefined,
     budgetSpent: formData.get('budgetSpent') || undefined,
     advancementRate: formData.get('advancementRate') ?? 0,
@@ -203,6 +208,7 @@ export async function updateProjet(
         wilaya: d.wilaya ?? null,
         ministere: d.ministere ?? null,
         status: d.status as ProjectStatus,
+        priority: d.priority as 'BASSE' | 'NORMALE' | 'HAUTE' | 'CRITIQUE',
         budget: d.budget ?? null,
         budgetSpent: d.budgetSpent ?? null,
         advancementRate: d.advancementRate,

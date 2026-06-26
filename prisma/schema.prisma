@@ -63,6 +63,13 @@ enum PATActionStatus {
   DONE
 }
 
+enum ProjectPriority {
+  BASSE
+  NORMALE
+  HAUTE
+  CRITIQUE
+}
+
 enum NotificationType {
   SIGNALEMENT_STATUS
   PROJECT_UPDATE
@@ -160,8 +167,9 @@ model Project {
   sector           String
   ministere        String?
   wilaya           String?
-  status           ProjectStatus @default(EN_ATTENTE)
-  budget           Decimal?      @db.Decimal(15, 2)
+  status           ProjectStatus   @default(EN_ATTENTE)
+  priority         ProjectPriority @default(NORMALE)
+  budget           Decimal?        @db.Decimal(15, 2)
   budgetSpent      Decimal?      @db.Decimal(15, 2)
   advancementRate  Int           @default(0) // 0–100 %
   startDate        DateTime?

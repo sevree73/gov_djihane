@@ -27,6 +27,7 @@ export type ProjectInitialData = {
   description: string
   sector: string
   status: string
+  priority: string
   wilaya: string | null
   ministere: string | null
   budget: number | null
@@ -35,6 +36,13 @@ export type ProjectInitialData = {
   startDate: string | null  // YYYY-MM-DD
   endDate: string | null    // YYYY-MM-DD
 }
+
+const PRIORITY_OPTIONS = [
+  { value: 'BASSE',    label: 'Basse',    color: 'text-gray-500' },
+  { value: 'NORMALE',  label: 'Normale',  color: 'text-blue-600' },
+  { value: 'HAUTE',    label: 'Haute',    color: 'text-orange-500' },
+  { value: 'CRITIQUE', label: 'Critique', color: 'text-red-600' },
+]
 
 interface ProjetFormProps {
   defaultWilaya?: string | null
@@ -133,6 +141,22 @@ export default function ProjetForm({
           >
             {Object.entries(PROJECT_STATUSES).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Priority */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Priorité <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="priority"
+            defaultValue={initialData?.priority ?? 'NORMALE'}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+          >
+            {PRIORITY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </div>

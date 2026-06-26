@@ -39,6 +39,7 @@ export default async function ModifierProjetPage({
     description: project.description,
     sector: project.sector,
     status: project.status,
+    priority: project.priority,
     wilaya: project.wilaya,
     ministere: project.ministere,
     budget: project.budget ? Number(project.budget) : null,
