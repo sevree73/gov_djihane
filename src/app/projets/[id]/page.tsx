@@ -21,14 +21,6 @@ const ADVANCEMENT_COLORS: Record<string, string> = {
   ANNULE: '#ef4444',
 }
 
-function formatBudget(budget: { toString(): string } | null): string {
-  if (!budget) return '—'
-  const n = parseFloat(budget.toString())
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)} milliards DZD`
-  if (n >= 1_000_000) return `${Math.round(n / 1_000_000)} millions DZD`
-  return `${n.toLocaleString('fr-DZ')} DZD`
-}
-
 export default async function ProjetDetailPage({
   params,
 }: {
@@ -42,10 +34,6 @@ export default async function ProjetDetailPage({
       where: { id },
       include: {
         createdBy: { select: { name: true } },
-        consultations: {
-          where: { status: 'PUBLIEE' },
-          select: { id: true, title: true, _count: { select: { votes: true } } },
-        },
       },
     }),
     prisma.comment.findMany({
@@ -118,12 +106,6 @@ export default async function ProjetDetailPage({
                 <p className="font-medium text-gray-800">{project.wilaya}</p>
               </div>
             )}
-            {(project.budget || project.budgetSpent) && (
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Budget</p>
-                <p className="font-medium text-gray-800">{formatBudget(project.budget)}</p>
-              </div>
-            )}
             {project.startDate && (
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Date de début</p>
@@ -161,35 +143,6 @@ export default async function ProjetDetailPage({
           </div>
         </div>
 
-        {/* Related consultations */}
-        {project.consultations.length > 0 && (
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              Consultations ouvertes
-            </h2>
-            <div className="space-y-3">
-              {project.consultations.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/consultations/${c.id}`}
-                  className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 hover:bg-emerald-100 transition-colors"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-emerald-800">{c.title}</p>
-                    <p className="text-xs text-emerald-600 mt-0.5">
-                      {c._count.votes} participant{c._count.votes !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  <span className="text-emerald-600 text-sm font-medium">Participer →</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Comment section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

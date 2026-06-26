@@ -42,7 +42,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             { href: '/admin/dashboard', label: 'Tableau de bord', icon: '⬛' },
             { href: '/admin/signalements', label: 'Signalements', icon: '📋', badge: recuCount > 0 ? recuCount : undefined },
             { href: '/admin/projets', label: 'Projets', icon: '🏗' },
-            { href: '/admin/consultations', label: 'Consultations', icon: '🗳' },
             { href: '/admin/analytics', label: 'Analytiques', icon: '📊' },
             { href: '/admin/utilisateurs', label: 'Utilisateurs', icon: '👥' },
           ].map(({ href, label, icon, badge }) => (

@@ -22,12 +22,6 @@ export default async function LandingPage() {
         </div>
 
         <nav className="flex items-center gap-2">
-          <Link
-            href="/consultations"
-            className="hidden sm:block px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            Consultations
-          </Link>
           {session ? (
             <Link
               href="/carte"
@@ -72,8 +66,8 @@ export default async function LandingPage() {
         </h1>
 
         <p className="text-gray-400 text-lg sm:text-xl max-w-2xl mb-12 leading-relaxed">
-          Signalez des problèmes, suivez les projets territoriaux et participez aux
-          consultations publiques. Votre voix compte.
+          Signalez des problèmes et suivez les projets territoriaux de votre wilaya.
+          Votre voix compte.
         </p>
 
         {/* CTAs */}
@@ -103,7 +97,7 @@ export default async function LandingPage() {
         </div>
 
         {/* Feature grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl w-full">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 text-left">
             <div className="w-10 h-10 rounded-xl bg-red-900/50 flex items-center justify-center mb-4">
               <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,18 +124,6 @@ export default async function LandingPage() {
             </p>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 text-left">
-            <div className="w-10 h-10 rounded-xl bg-emerald-900/50 flex items-center justify-center mb-4">
-              <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-white mb-1">Consultations publiques</h3>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Donnez votre avis sur les décisions locales et participez aux consultations ouvertes.
-            </p>
-          </div>
         </div>
       </main>
 
