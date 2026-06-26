@@ -3,12 +3,6 @@ import { notFound } from 'next/navigation'
 import { requireAdmin } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
 
-function computeAvancement(actions: { status: string }[]): number {
-  if (actions.length === 0) return 0
-  const done = actions.filter((a) => a.status === 'DONE').length
-  return Math.round((done / actions.length) * 100)
-}
-
 function computeAlerts(actions: { status: string }[]): number {
   return actions.filter((a) => a.status === 'RETARD').length
 }
@@ -85,7 +79,6 @@ export default async function PATListPage({
       ) : (
         <div className="space-y-4">
           {project.pats.map((pat) => {
-            const avancement = computeAvancement(pat.actions)
             const alerts = computeAlerts(pat.actions)
             const done = pat.actions.filter((a) => a.status === 'DONE').length
             const enCours = pat.actions.filter((a) => a.status === 'EN_COURS').length
@@ -121,12 +114,12 @@ export default async function PATListPage({
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-500">Avancement</span>
-                    <span className="text-xs font-bold text-gray-700">{avancement}%</span>
+                    <span className="text-xs font-bold text-gray-700">{pat.avancement}%</span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all bg-blue-500"
-                      style={{ width: `${avancement}%` }}
+                      style={{ width: `${pat.avancement}%` }}
                     />
                   </div>
                 </div>

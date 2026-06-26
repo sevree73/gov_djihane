@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { requireAdmin } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
 import {
-  updatePATName,
+  updatePAT,
   deletePAT,
   addPATAction,
   updatePATActionStatus,
@@ -92,25 +92,40 @@ export default async function PATDetailPage({
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <form action={updatePATName} className="flex items-center gap-2 mb-1">
+            <form action={updatePAT} className="space-y-3">
               <input type="hidden" name="patId" value={patId} />
-              <input
-                name="name"
-                type="text"
-                defaultValue={pat.name}
-                required
-                minLength={3}
-                maxLength={200}
-                className="text-xl font-bold text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent w-full transition-colors"
-              />
-              <button type="submit" className="shrink-0 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                Enregistrer
-              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  name="name"
+                  type="text"
+                  defaultValue={pat.name}
+                  required
+                  minLength={3}
+                  maxLength={200}
+                  className="text-xl font-bold text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent flex-1 transition-colors"
+                />
+              </div>
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-gray-500 whitespace-nowrap">Avancement (%)</label>
+                  <input
+                    name="avancement"
+                    type="number"
+                    min={0}
+                    max={100}
+                    defaultValue={pat.avancement}
+                    className="w-20 rounded-lg border border-gray-300 px-2 py-1 text-sm text-center focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                <button type="submit" className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors">
+                  Enregistrer
+                </button>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-400">
+                <span>PAW : {pat.project.title}</span>
+                {pat.project.wilaya && <span className="px-2 py-0.5 bg-gray-100 rounded-full">{pat.project.wilaya}</span>}
+              </div>
             </form>
-            <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
-              <span>PAW : {pat.project.title}</span>
-              {pat.project.wilaya && <span className="px-2 py-0.5 bg-gray-100 rounded-full">{pat.project.wilaya}</span>}
-            </div>
           </div>
           <form action={deletePAT}>
             <input type="hidden" name="patId" value={patId} />
@@ -136,6 +151,22 @@ export default async function PATDetailPage({
           </p>
         </div>
       )}
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
+          <p className="text-3xl font-bold text-blue-700">{ind.enCours}</p>
+          <p className="text-xs text-blue-600 mt-1 font-medium">Actions en cours</p>
+        </div>
+        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+          <p className="text-3xl font-bold text-emerald-700">{ind.achevees}</p>
+          <p className="text-xs text-emerald-600 mt-1 font-medium">PAT Suivis</p>
+        </div>
+        <div className={`rounded-xl p-4 text-center border ${ind.alerts > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
+          <p className={`text-3xl font-bold ${ind.alerts > 0 ? 'text-red-600' : 'text-gray-400'}`}>{ind.alerts}</p>
+          <p className={`text-xs mt-1 font-medium ${ind.alerts > 0 ? 'text-red-500' : 'text-gray-400'}`}>Alertes</p>
+        </div>
+      </div>
 
       {/* Indicateurs */}
       <div>

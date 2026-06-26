@@ -26,6 +26,8 @@ export async function createPAT(
   if (!project) return { error: 'Projet introuvable' }
 
   // Extract initial actions: action_text_0, action_deadline_0, …
+  const avancement = Math.min(100, Math.max(0, parseInt(formData.get('avancement') as string) || 0))
+
   const initialActions: { text: string; deadline: Date }[] = []
   for (let i = 0; i < 100; i++) {
     const text = (formData.get(`action_text_${i}`) as string | null)?.trim()
@@ -40,6 +42,7 @@ export async function createPAT(
   await prisma.pAT.create({
     data: {
       name: parsed.data,
+      avancement,
       projectId,
       actions: {
         create: initialActions.map((a) => ({ text: a.text, deadline: a.deadline, status: 'EN_COURS' })),
@@ -51,16 +54,18 @@ export async function createPAT(
   redirect(`/admin/projets/${projectId}/pats`)
 }
 
-export async function updatePATName(formData: FormData): Promise<void> {
+export async function updatePAT(formData: FormData): Promise<void> {
   await requireAdmin()
 
   const patId = formData.get('patId') as string
   const name = (formData.get('name') as string)?.trim()
+  const avancement = Math.min(100, Math.max(0, parseInt(formData.get('avancement') as string) || 0))
 
   if (!name || name.length < 3) return
 
-  const pat = await prisma.pAT.update({ where: { id: patId }, data: { name } })
+  const pat = await prisma.pAT.update({ where: { id: patId }, data: { name, avancement } })
   revalidatePath(`/admin/projets/${pat.projectId}/pats/${patId}`)
+  revalidatePath(`/admin/projets/${pat.projectId}/pats`)
 }
 
 export async function deletePAT(formData: FormData): Promise<void> {

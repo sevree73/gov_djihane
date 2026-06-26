@@ -58,23 +58,41 @@ export default function NouveauPATPage() {
         {/* PAT name */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Informations générales</h2>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Nom du PAT <span className="text-red-500">*</span>
-            </label>
-            <input
-              name="name"
-              type="text"
-              required
-              minLength={3}
-              maxLength={200}
-              autoFocus
-              placeholder="Ex: PAT Urbanisme Nord 2025"
-              className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition"
-            />
-            <p className="mt-1.5 text-xs text-gray-400">
-              La wilaya et le projet PAW sont automatiquement hérités du projet.
-            </p>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Nom du PAT <span className="text-red-500">*</span>
+              </label>
+              <input
+                name="name"
+                type="text"
+                required
+                minLength={3}
+                maxLength={200}
+                autoFocus
+                placeholder="Ex: PAT Urbanisme Nord 2025"
+                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition"
+              />
+              <p className="mt-1.5 text-xs text-gray-400">
+                La wilaya et le projet PAW sont automatiquement hérités du projet.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Avancement (%)
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  name="avancement"
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={0}
+                  className="w-24 rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-center focus:border-blue-500 focus:outline-none transition"
+                />
+                <span className="text-sm text-gray-400">sur 100%</span>
+              </div>
+            </div>
           </div>
         </div>
 
