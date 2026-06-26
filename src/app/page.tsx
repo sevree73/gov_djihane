@@ -35,25 +35,20 @@ const FEATURE_BULLETS = [
 ]
 
 export default async function LandingPage() {
-  const [
-    session,
-    patCount,
-    communesResult,
-    signalementTotal,
-    signalementTraites,
-    actionsEnCours,
-  ] = await Promise.all([
-    getSession(),
-    prisma.pAT.count(),
-    prisma.signalement.findMany({
-      distinct: ['commune'],
-      where: { commune: { not: null } },
-      select: { commune: true },
-    }),
-    prisma.signalement.count(),
-    prisma.signalement.count({ where: { status: { in: ['RESOLU', 'PRIS_EN_CHARGE'] } } }),
-    prisma.pATAction.count({ where: { status: 'EN_COURS' } }),
-  ])
+  const session = await getSession()
+
+  const [patCount, communesResult, signalementTotal, signalementTraites, actionsEnCours] =
+    await Promise.all([
+      prisma.pAT.count().catch(() => 0),
+      prisma.signalement.findMany({
+        distinct: ['commune'],
+        where: { commune: { not: null } },
+        select: { commune: true },
+      }).catch(() => []),
+      prisma.signalement.count().catch(() => 0),
+      prisma.signalement.count({ where: { status: { in: ['RESOLU', 'PRIS_EN_CHARGE'] } } }).catch(() => 0),
+      prisma.pATAction.count({ where: { status: 'EN_COURS' } }).catch(() => 0),
+    ])
 
   const communesCount = communesResult.length
   const traitesPercent = signalementTotal > 0
