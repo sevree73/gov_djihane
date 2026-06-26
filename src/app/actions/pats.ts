@@ -25,7 +25,27 @@ export async function createPAT(
   const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } })
   if (!project) return { error: 'Projet introuvable' }
 
-  await prisma.pAT.create({ data: { name: parsed.data, projectId } })
+  // Extract initial actions: action_text_0, action_deadline_0, …
+  const initialActions: { text: string; deadline: Date }[] = []
+  for (let i = 0; i < 100; i++) {
+    const text = (formData.get(`action_text_${i}`) as string | null)?.trim()
+    const deadlineStr = formData.get(`action_deadline_${i}`) as string | null
+    if (!text && !deadlineStr) break
+    if (!text || !deadlineStr) continue
+    const deadline = new Date(deadlineStr)
+    if (isNaN(deadline.getTime())) continue
+    initialActions.push({ text, deadline })
+  }
+
+  await prisma.pAT.create({
+    data: {
+      name: parsed.data,
+      projectId,
+      actions: {
+        create: initialActions.map((a) => ({ text: a.text, deadline: a.deadline, status: 'EN_COURS' })),
+      },
+    },
+  })
 
   revalidatePath(`/admin/projets/${projectId}/pats`)
   redirect(`/admin/projets/${projectId}/pats`)

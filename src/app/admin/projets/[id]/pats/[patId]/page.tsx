@@ -118,7 +118,6 @@ export default async function PATDetailPage({
             <button
               type="submit"
               className="shrink-0 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
-              onClick={(e) => { if (!confirm('Supprimer ce PAT et toutes ses actions ?')) e.preventDefault() }}
             >
               Supprimer le PAT
             </button>
